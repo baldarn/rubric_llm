@@ -129,6 +129,30 @@ class TestJudgeJudgment < Minitest::Test
     assert_equal "Be strict.", RubyLLMStub.fake_judge.last_call[:questions][:quality][:instructions]
   end
 
+  def test_chat_models_that_also_offer_judgments_use_chat
+    RubyLLMStub.models.model = RubyLLMStub::FakeModel.new(capabilities: %w[structured_output judgment], type: :chat)
+
+    refute_predicate judge(judge_model: "gpt-6-luna"), :judgment?
+  end
+
+  def test_unlisted_models_fail_for_remote_providers
+    RubyLLMStub.models.error = RubyLLMReal::ModelNotFoundError.new("Unknown model: jev-2")
+
+    error = assert_raises(RubricLLM::JudgeError) { judge(judge_model: "jev-2", judge_provider: :typesafe).judgment? }
+
+    assert_includes error.message, "Unknown model: jev-2"
+  end
+
+  def test_judgment_validates_config_before_registry_lookup
+    RubyLLMStub.models.error = RuntimeError.new("lookup should not run")
+    instance = judge
+    instance.config.judge_provider = "typesafe"
+
+    error = assert_raises(RubricLLM::ConfigurationError) { instance.judgment? }
+
+    assert_includes error.message, "judge_provider must be a symbol"
+  end
+
   private
 
   def judge(**)

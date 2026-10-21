@@ -42,22 +42,17 @@ module RubricLLM
       @config = config
     end
 
-    # True when the configured model answers typed judgments (for example
+    # True when the configured model only answers typed judgments (for example
     # TypeSafe's Jev) instead of chat. Metrics use RubyLLM.judge for these models.
+    # Chat models that also offer judgments, such as OpenAI's, keep using chat.
     def judgment?
+      config.validate!
       key = [config.judge_model, config.judge_provider]
       return @judgment if @judgment_key == key
 
-      @judgment = begin
-        RubyLLM.models.find(config.judge_model, provider: config.judge_provider).supports?(:judgment)
-      rescue RubyLLM::ModelNotFoundError
-        # Local providers such as Ollama accept chat models missing from the registry.
-        false
-      end
+      @judgment = judgment_model?
       @judgment_key = key
       @judgment
-    rescue StandardError => e
-      raise wrap_error(e)
     end
 
     # Send a prompt to the judge LLM and return the parsed JSON response.
@@ -114,6 +109,22 @@ module RubricLLM
     end
 
     private
+
+    def judgment_model?
+      RubyLLM.models.find(config.judge_model, provider: config.judge_provider).type == :judgment
+    rescue RubyLLM::ModelNotFoundError => e
+      # Like RubyLLM, local providers such as Ollama accept chat models missing from the registry.
+      raise wrap_error(e) unless accepts_unlisted_models?
+
+      false
+    rescue StandardError => e
+      raise wrap_error(e)
+    end
+
+    def accepts_unlisted_models?
+      provider = RubyLLM::Provider.providers[config.judge_provider]
+      provider ? provider.local? || provider.assume_models_exist? : false
+    end
 
     def with_retries
       attempts = 0

@@ -47,6 +47,24 @@ class JudgmentContract < RealClientContract
     assert_includes error.message, "Judge call failed"
   end
 
+  def test_chat_models_that_also_offer_judgments_keep_using_chat
+    stub_response
+
+    config = RubricLLM::Config.new(judge_model: "offline-decisions", judge_provider: :openai, max_retries: 0, retry_base_delay: 0)
+    result = RubricLLM::Judge.new(config:).call(system_prompt: "Judge the answer", user_prompt: "Test answer")
+
+    assert_in_delta 0.9, result["score"]
+    assert_equal "offline-decisions", @requests.fetch(0)["model"]
+  end
+
+  def test_unlisted_typesafe_models_report_unknown_model
+    judge = RubricLLM::Judge.new(config: RubricLLM::Config.new(judge_model: "jev-2", judge_provider: :typesafe))
+
+    error = assert_raises(RubricLLM::JudgeError) { judge.judgment? }
+
+    assert_includes error.message, "jev-2"
+  end
+
   private
 
   def metric(klass)

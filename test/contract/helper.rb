@@ -76,5 +76,8 @@ class RealClientContract < Minitest::Test
     end
     chat_models << RubyLLM::Model.new(id: "jev-latest", provider: "typesafe", name: "jev-latest",
                                       modalities: { input: ["text"], output: ["judgment"] }, capabilities: ["judgment"])
+    chat_models << RubyLLM::Model.new(id: "offline-decisions", provider: "openai", name: "offline-decisions", max_output_tokens: 8192,
+                                      modalities: { input: ["text"], output: ["text"] },
+                                      capabilities: %w[structured_output judgment])
   end
 end

@@ -118,7 +118,7 @@ Higher effort does not guarantee better scores. Compare results on your evaluati
 
 ### Judgment Models (TypeSafe Jev)
 
-Judgment models such as TypeSafe's Jev (`jev-latest`, `jev-preview`) do not chat. They answer typed questions through RubyLLM's [`RubyLLM.judge`](https://rubyllm.com/). RubricLLM detects them from the RubyLLM model registry (the `judgment` capability) and uses judgment questions instead of chat prompts:
+Judgment models such as TypeSafe's Jev (`jev-latest`, `jev-preview`) do not chat. They answer typed questions through RubyLLM's [`RubyLLM.judge`](https://rubyllm.com/). RubricLLM detects judgment-only models from the RubyLLM model registry (models whose only output is `judgment`) and uses judgment questions instead of chat prompts. Chat models that also offer judgments, such as OpenAI's `gpt-6-luna`, keep using chat. A model missing from the registry is treated as chat only for local providers such as Ollama; otherwise RubricLLM reports an unknown model:
 
 ```ruby
 RubyLLM.configure do |c|
@@ -131,7 +131,7 @@ RubricLLM.configure do |c|
 end
 ```
 
-Other decision models work the same way when RubyLLM supports them and lists them with the `judgment` capability. Only TypeSafe's protocol is covered by RubricLLM's tests.
+Other judgment-only models work the same way when RubyLLM supports them. Only TypeSafe's protocol is covered by RubricLLM's tests.
 
 Decision models are a low-cost option for narrow classification questions. They are weaker on tasks that need reasoning, such as extracting and checking individual claims ([Decision Models for Evals](https://hamel.dev/blog/posts/decision-model-evals)). RubricLLM therefore supports them only for metrics that fit that shape:
 

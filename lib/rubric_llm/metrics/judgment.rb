@@ -22,6 +22,8 @@ module RubricLLM
       class << self
         # Scores the sample against ordered levels, worst first.
         def score(instructions, levels)
+          raise ArgumentError, "score needs an Array of at least two levels" unless levels.is_a?(Array) && levels.size >= 2
+
           @question = { type: :score, instructions:, levels: }
         end
 

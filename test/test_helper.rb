@@ -11,12 +11,14 @@ require "minitest/autorun"
 # Stub for RubyLLM chat that returns predictable JSON responses.
 module RubyLLMStub
   ModelNotFoundError = RubyLLM::ModelNotFoundError
+  Provider = RubyLLM::Provider
 
   class FakeModel
-    attr_reader :capabilities
+    attr_reader :capabilities, :type
 
-    def initialize(capabilities: ["structured_output"])
+    def initialize(capabilities: ["structured_output"], type: :chat)
       @capabilities = capabilities.map(&:to_s)
+      @type = type
     end
 
     def supports?(capability)
@@ -209,7 +211,7 @@ module TestSetup
 
   # Configure a judgment model (such as TypeSafe's Jev) that answers with +answers+.
   def stub_judgment(answers = {}, **)
-    RubyLLMStub.models.model = RubyLLMStub::FakeModel.new(capabilities: ["judgment"])
+    RubyLLMStub.models.model = RubyLLMStub::FakeModel.new(capabilities: ["judgment"], type: :judgment)
     RubyLLMStub.fake_judge = RubyLLMStub::FakeJudge.new(answers:, **)
   end
 

@@ -61,18 +61,23 @@ module RubricLLM
       # Ask one score or probability question and turn its answer into a metric result.
       # A score is normalized from its level indexes; a probability is the probability of yes.
       def score_question(input, name, question)
+        question = question.transform_keys(&:to_sym)
+        type = question[:type]&.to_sym
+        raise ArgumentError, "Unsupported judgment question type: #{question[:type].inspect}" unless %i[score probability].include?(type)
+
         answer = judgment_eval(input, { name => question }).fetch(name)
-        case question[:type]
-        when :score
-          { score: normalized_score(answer),
-            details: { backend: :judgment, probabilities: answer.probabilities, confidence: answer.confidence } }
-        when :probability
+        if type == :score
+          { score: normalized_score(answer), details: score_details(answer) }
+        else
           probability = probability_of(answer)
           { score: probability, details: { backend: :judgment, probability: } }
-        else raise ArgumentError, "Unsupported judgment question type: #{question[:type].inspect}"
         end
+      end
+
+      def score_details(answer)
+        { backend: :judgment, probabilities: answer.probabilities, confidence: answer.confidence }
       rescue NoMethodError
-        raise JudgeError, "Judgment answer #{name} is malformed"
+        raise JudgeError, "Judgment score answer is malformed"
       end
 
       # Map a judgment score from its level indexes onto 0.0-1.0.
